@@ -23,12 +23,13 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    
+
     await client.connect();
 
     const coffeeCollection = client.db('coffeeDB').collection('coffees');
+    const usersCollection = client.db('coffeeDB').collection('users');
 
-    app.get('/coffees',  async (req, res) => {
+    app.get('/coffees', async (req, res) => {
       const cursor = coffeeCollection.find();
       const result = await cursor.toArray();
       res.send(result);
@@ -40,13 +41,13 @@ async function run() {
       const result = await coffeeCollection.findOne(query);
       res.send(result);
     });
-    
+
     app.post('/coffees', async (req, res) => {
       const newCoffee = req.body;
       console.log(newCoffee);
       const result = await coffeeCollection.insertOne(newCoffee);
       res.send(result);
-      
+
     });
 
     app.delete('/coffees/:id', async (req, res) => {
@@ -62,11 +63,47 @@ async function run() {
       const filter = { _id: new ObjectId(id) };
       const options = { upsert: true };
       const updatedDoc = {
-        $set:  updatedCoffee
+        $set: updatedCoffee
       };
       const result = await coffeeCollection.updateOne(filter, updatedDoc, options);
       res.send(result);
     });
+
+    //users related api
+
+    app.get('/users', async (req, res) => {
+
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.post('/users', async (req, res) => {
+      const newUser = req.body;
+      console.log(newUser);
+      const result = await usersCollection.insertOne(newUser);
+      res.send(result);
+    });
+
+    app.delete('/users/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await usersCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    app.patch('/users', async (req, res) => {
+      const { email, lastSignInTime } = req.body;
+      const filter = { email: email }
+      const updatedDoc = {
+        $set: {
+          lastSignInTime: lastSignInTime
+        }
+      }
+
+      const result = await usersCollection.updateOne(filter, updatedDoc)
+      res.send(result);
+    });
+
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
